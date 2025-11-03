@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/generate-music.js": {
+      "maxDuration": 300
+    }
+  },
+  "env": {
+    "REPLICATE_API_TOKEN": "@replicate-api-token"
+  }
+}
