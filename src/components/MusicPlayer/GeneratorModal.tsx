@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Track } from './types';
+import { Track, GenerationStatus } from './types';
+import { audioApi, AudioApiError } from '../../services/audioApi';
+import { useAudioApi } from '../../hooks/useAudioApi';
 
 // Sample demo tracks for frontend-only demo
 const DEMO_TRACKS = [
@@ -41,6 +43,8 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
     onClose, 
     onTrackGenerated 
 }) => {
+    const { generateLyrics, getLyricsThemes } = useAudioApi();
+    
     const [songName, setSongName] = useState('');
     const [description, setDescription] = useState('');
     const [lyrics, setLyrics] = useState('');
@@ -49,6 +53,9 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [nameValid, setNameValid] = useState(false);
     const [descValid, setDescValid] = useState(false);
+    const [generationStatus, setGenerationStatus] = useState<GenerationStatus>({ isGenerating: false });
+    const [suggestedThemes, setSuggestedThemes] = useState<string[]>([]);
+    const [showThemes, setShowThemes] = useState(false);
 
     useEffect(() => { 
         setNameValid(songName.trim().length > 0 && songName.trim().length <= 30); 
@@ -67,12 +74,56 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
         setIsGeneratingLyrics(true); 
         setError(null);
         
-        // Simulate API call delay for demo
-        setTimeout(() => {
+        try {
+            const response = await generateLyrics(songName, description);
+            
+            if (response.success) {
+                setLyrics(response.lyrics);
+            } else {
+                setError('Failed to generate lyrics. Please try again.');
+            }
+        } catch (err) {
+            console.error('Lyrics generation failed:', err);
+            
+            if (err instanceof AudioApiError) {
+                setError(`Lyrics generation failed: ${err.message}`);
+            } else {
+                setError('Failed to generate lyrics. Please try again.');
+            }
+            
+            // Fallback to demo lyrics if API fails
             const randomLyrics = SAMPLE_LYRICS[Math.floor(Math.random() * SAMPLE_LYRICS.length)];
             setLyrics(randomLyrics);
+        } finally {
             setIsGeneratingLyrics(false);
-        }, 1500);
+        }
+    };
+
+    const handleGetThemes = async () => {
+        try {
+            const themes = await getLyricsThemes();
+            setSuggestedThemes(themes);
+            setShowThemes(true);
+        } catch (err) {
+            console.error('Failed to get themes:', err);
+            // Use fallback themes
+            setSuggestedThemes([
+                'Love and relationships',
+                'Dreams and aspirations',
+                'Overcoming challenges',
+                'Friendship and loyalty',
+                'Adventure and exploration',
+                'Self-discovery',
+                'Nostalgia and memories',
+                'Hope and inspiration'
+            ]);
+            setShowThemes(true);
+        }
+    };
+
+    const handleThemeSelect = (theme: string) => {
+        setSongName(theme);
+        setShowThemes(false);
     };
 
     const handleGenerate: React.FormEventHandler = async (e) => {
@@ -90,32 +141,56 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
         
         setIsLoading(true); 
         setError(null);
+        setGenerationStatus({ isGenerating: true, message: 'Generating your music...' });
         
-        // Simulate music generation with demo track
-        setTimeout(() => {
-            const randomTrack = DEMO_TRACKS[Math.floor(Math.random() * DEMO_TRACKS.length)];
+        try {
+            // Call the real API
+            const audioFile = await audioApi.generateAudio({
+                prompt: description,
+                lyrics: lyrics.trim()
+            });
             
+            // Create track object with API response
             const newTrack: Track = { 
-                id: `track-${Date.now()}`, 
+                id: audioFile.id,
+                fileId: audioFile.id,
                 title: songName, 
-                artist: 'AI Bard', 
-                audioSrc: randomTrack.audioSrc, 
-                imageUrl: `https://picsum.photos/seed/${Date.now()}/500/500` 
+                artist: 'AI Generated', 
+                audioSrc: audioApi.getAudioUrl(audioFile.id),
+                imageUrl: `https://picsum.photos/seed/${audioFile.id}/500/500`,
+                duration: audioFile.duration,
+                createdAt: audioFile.created_at
             };
             
             onTrackGenerated(newTrack);
+            
+            // Reset form
             setSongName(''); 
             setDescription(''); 
             setLyrics('');
+            setGenerationStatus({ isGenerating: false });
+            onClose();
+            
+        } catch (err) {
+            console.error('Audio generation failed:', err);
+            
+            if (err instanceof AudioApiError) {
+                setError(`Generation failed: ${err.message}`);
+            } else {
+                setError('Failed to generate music. Please try again.');
+            }
+            
+            setGenerationStatus({ isGenerating: false, error: 'Generation failed' });
+        } finally {
             setIsLoading(false);
-        }, 2000);
+        }
     };
 
     if (!isOpen) return null;
     
     return (
         <div className="music-player">
-            <style>{`:root { --lightBlue: #73AAD6; --lightestBlue: #D5E7FB; --blue: #0047AB; } .music-player .composer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:grid; place-items:center; z-index:50; font-family: Arial, sans-serif;} .music-player .composer { width: 360px; border:1px solid var(--lightBlue, #73AAD6); border-radius:2px; background:var(--lightestBlue, #D5E7FB); box-shadow: 0 8px 24px rgba(0,0,0,.35); } .music-player .composer .titlebar { display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:var(--blue, #0047AB); border-bottom:1px solid var(--lightBlue, #73AAD6); } .music-player .composer .titlebar .title { font-weight:800; font-size:13px; color:#fff; } .music-player .composer .titlebar .close { appearance:none; border:1px solid var(--lightBlue, #73AAD6); background:#EBEBEB; width:20px; height:20px; border-radius:2px; cursor:pointer; font-weight:800; line-height:1; color:#1a1a1a; } .music-player .composer .body { padding:10px; background:var(--lightestBlue, #D5E7FB); } .music-player .composer fieldset { border:1px solid var(--lightBlue, #73AAD6); border-radius:2px; padding:8px; margin:0 0 8px 0; background:#fff; } .music-player .composer legend { padding:0 4px; font-size:12px; font-weight:700; color:var(--blue, #0047AB); } .music-player .composer label { display:block; font-size:12px; color:var(--blue, #0047AB); margin-bottom:4px; } .music-player .composer input, .music-player .composer textarea { width:100%; border:1px solid #9f9f9f; border-radius:2px; background:#fff; padding:6px; font-size:12px; color:#333; } .music-player .composer textarea#description { min-height: 70px; resize: vertical; } .music-player .composer textarea#lyrics { min-height: 140px; resize: vertical;} .music-player .composer .note { font-size:11px; color:#355; margin-top:4px; } .music-player .composer .lyrics-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; } .music-player .composer .lyrics-header label { margin-bottom: 0; } .music-player .composer .actions { display:flex; justify-content:flex-end; gap:8px; padding:8px 10px 10px; background:#EBEBEB; border-top:1px solid var(--lightBlue, #73AAD6); } .music-player .composer .btn { position:relative; appearance:none; border:1px solid #8f8f8f; border-radius:3px; background:#EBEBEB; padding:8px 14px; font-weight:700; font-size:12px; cursor:pointer; color:#1a1a1a; display: inline-flex; align-items: center; justify-content: center; min-height: 32px; } .music-player .composer .btn:disabled { opacity: 0.6; cursor: not-allowed; } .music-player .composer .btn.primary { background:#FF7B00; color:#fff; border-color:#cc6a00; } .music-player .composer .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation: spin 1s linear infinite; } .music-player .composer .ai-lyrics-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:32px; min-width:110px; padding:0 12px; background-color:#5a67d8; color:#fff; font-size:13px; font-weight:bold; border:1px solid #434190; border-radius:4px; cursor:pointer; transition: background-color .2s, opacity .2s; box-shadow:0 1px 2px rgba(0,0,0,.1); } .music-player .composer .ai-lyrics-button:hover { background-color:#4c51bf; } .music-player .composer .ai-lyrics-button:disabled { opacity:.7; cursor:not-allowed; background-color:#8b8db5; } .music-player .composer .ai-lyrics-button .icon { flex-shrink:0; display:inline-block; width:16px; height:16px; background:url(https://storage.googleapis.com/lawinsider-public/assets/art-test-images/icon-spark-pencil-light.svg) no-repeat center/contain; } @keyframes spin { to { transform: rotate(360deg); } } .music-player .composer .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; } .mandatory-star { color: red; margin-left: 2px; }`}</style>
+            <style>{`:root { --lightBlue: #73AAD6; --lightestBlue: #D5E7FB; --blue: #0047AB; } .music-player .composer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:grid; place-items:center; z-index:50; font-family: Arial, sans-serif;} .music-player .composer { width: 360px; border:1px solid var(--lightBlue, #73AAD6); border-radius:2px; background:var(--lightestBlue, #D5E7FB); box-shadow: 0 8px 24px rgba(0,0,0,.35); } .music-player .composer .titlebar { display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:var(--blue, #0047AB); border-bottom:1px solid var(--lightBlue, #73AAD6); } .music-player .composer .titlebar .title { font-weight:800; font-size:13px; color:#fff; } .music-player .composer .titlebar .close { appearance:none; border:1px solid var(--lightBlue, #73AAD6); background:#EBEBEB; width:20px; height:20px; border-radius:2px; cursor:pointer; font-weight:800; line-height:1; color:#1a1a1a; } .music-player .composer .body { padding:10px; background:var(--lightestBlue, #D5E7FB); } .music-player .composer fieldset { border:1px solid var(--lightBlue, #73AAD6); border-radius:2px; padding:8px; margin:0 0 8px 0; background:#fff; } .music-player .composer legend { padding:0 4px; font-size:12px; font-weight:700; color:var(--blue, #0047AB); } .music-player .composer label { display:block; font-size:12px; color:var(--blue, #0047AB); margin-bottom:4px; } .music-player .composer input, .music-player .composer textarea { width:100%; border:1px solid #9f9f9f; border-radius:2px; background:#fff; padding:6px; font-size:12px; color:#333; } .music-player .composer textarea#description { min-height: 70px; resize: vertical; } .music-player .composer textarea#lyrics { min-height: 140px; resize: vertical;} .music-player .composer .note { font-size:11px; color:#355; margin-top:4px; } .music-player .composer .lyrics-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; } .music-player .composer .lyrics-header label { margin-bottom: 0; } .music-player .composer .actions { display:flex; justify-content:flex-end; gap:8px; padding:8px 10px 10px; background:#EBEBEB; border-top:1px solid var(--lightBlue, #73AAD6); } .music-player .composer .btn { position:relative; appearance:none; border:1px solid #8f8f8f; border-radius:3px; background:#EBEBEB; padding:8px 14px; font-weight:700; font-size:12px; cursor:pointer; color:#1a1a1a; display: inline-flex; align-items: center; justify-content: center; min-height: 32px; } .music-player .composer .btn:disabled { opacity: 0.6; cursor: not-allowed; } .music-player .composer .btn.primary { background:#FF7B00; color:#fff; border-color:#cc6a00; } .music-player .composer .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation: spin 1s linear infinite; } .music-player .composer .ai-lyrics-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:32px; min-width:110px; padding:0 12px; background-color:#5a67d8; color:#fff; font-size:13px; font-weight:bold; border:1px solid #434190; border-radius:4px; cursor:pointer; transition: background-color .2s, opacity .2s; box-shadow:0 1px 2px rgba(0,0,0,.1); } .music-player .composer .ai-lyrics-button:hover { background-color:#4c51bf; } .music-player .composer .ai-lyrics-button:disabled { opacity:.7; cursor:not-allowed; background-color:#8b8db5; } .music-player .composer .ai-lyrics-button .icon { flex-shrink:0; display:inline-block; width:16px; height:16px; background:url(https://storage.googleapis.com/lawinsider-public/assets/art-test-images/icon-spark-pencil-light.svg) no-repeat center/contain; } .music-player .composer .theme-btn { background:#28a745; color:white; border:1px solid #1e7e34; padding:4px 8px; border-radius:3px; font-size:11px; cursor:pointer; } .music-player .composer .theme-btn:hover { background:#218838; } .music-player .composer .theme-btn:disabled { opacity:0.6; cursor:not-allowed; } .music-player .composer .themes-dropdown { position:relative; margin-top:8px; border:1px solid var(--lightBlue); border-radius:4px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.1); } .music-player .composer .themes-header { display:flex; justify-content:space-between; align-items:center; padding:8px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:12px; font-weight:bold; } .music-player .composer .close-themes { background:none; border:none; font-size:16px; cursor:pointer; color:#666; } .music-player .composer .themes-list { max-height:150px; overflow-y:auto; } .music-player .composer .theme-item { display:block; width:100%; text-align:left; padding:8px 12px; border:none; background:none; font-size:12px; cursor:pointer; border-bottom:1px solid #f0f0f0; } .music-player .composer .theme-item:hover { background:#f8f9fa; } .music-player .composer .theme-item:last-child { border-bottom:none; } @keyframes spin { to { transform: rotate(360deg); } } .music-player .composer .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; } .mandatory-star { color: red; margin-left: 2px; }`}</style>
             <div className="composer-overlay" role="dialog" aria-modal="true" aria-labelledby="composerTitle">
                 <div className="composer">
                     <div className="titlebar">
@@ -127,7 +202,17 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
                             {error && <div className="error-message">{error}</div>}
                             <fieldset>
                                 <legend>Song details</legend>
-                                <label htmlFor="songName">Song name<span className="mandatory-star">*</span></label>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                    <label htmlFor="songName">Song name<span className="mandatory-star">*</span></label>
+                                    <button 
+                                        type="button"
+                                        onClick={handleGetThemes}
+                                        className="theme-btn"
+                                        disabled={isLoading || isGeneratingLyrics}
+                                    >
+                                        💡 Get Ideas
+                                    </button>
+                                </div>
                                 <input 
                                     id="songName" 
                                     name="songName" 
@@ -137,6 +222,32 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
                                     required 
                                     placeholder="e.g., Midnight City Lights" 
                                 />
+                                {showThemes && (
+                                    <div className="themes-dropdown">
+                                        <div className="themes-header">
+                                            <span>Suggested themes:</span>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setShowThemes(false)}
+                                                className="close-themes"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div className="themes-list">
+                                            {suggestedThemes.map((theme, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    onClick={() => handleThemeSelect(theme)}
+                                                    className="theme-item"
+                                                >
+                                                    {theme}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <label htmlFor="description" style={{ marginTop: 8 }}>Music description<span className="mandatory-star">*</span></label>
                                 <textarea 
                                     id="description" 

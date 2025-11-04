@@ -1,12 +1,15 @@
-# AI Music Generator
+# AI MusicBox
 
-A modern, frontend-only music player application built with React and Vite. Features a retro-styled music player with AI-inspired demo functionality.
+A modern music player application with AI-powered audio generation capabilities. Features a retro-styled interface with real backend integration for generating and managing audio files.
 
 ## Features
 
 - 🎵 **Music Player**: Full-featured audio player with play/pause, volume control, and track display
 - 🎨 **Retro Theme**: Classic MySpace-inspired design with customizable themes
-- 📝 **Song Generator**: Demo functionality that simulates AI music generation
+- 🤖 **AI Audio Generation**: Real AI-powered music generation via backend API
+- 📚 **Audio Library**: Manage and browse all generated audio files
+- 🗑️ **File Management**: Delete unwanted audio files
+- 📊 **Statistics**: View audio library statistics
 - 📱 **Responsive Design**: Works on desktop and mobile devices
 - ⚡ **Fast Development**: Built with Vite for lightning-fast development experience
 
@@ -22,7 +25,7 @@ A modern, frontend-only music player application built with React and Vite. Feat
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd ai-music-generator
+cd myspace_frontend
 ```
 
 2. Install dependencies:
@@ -30,12 +33,20 @@ cd ai-music-generator
 npm install
 ```
 
-3. Start the development server:
+3. Configure environment (optional):
+```bash
+cp .env.example .env
+# Edit .env to set your API base URL if different from http://localhost:8000
+```
+
+4. Make sure the backend is running on `http://localhost:8000`
+
+5. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+6. Open your browser and navigate to `http://localhost:5173`
 
 ## Available Scripts
 
@@ -49,8 +60,15 @@ npm run dev
 src/
 ├── components/           # React components
 │   ├── ConfigurableMusicPlayer.tsx
+│   ├── AudioLibrary.tsx
+│   ├── ErrorBoundary.tsx
 │   └── MusicPlayer/     # Music player components
-├── types/               # TypeScript type definitions
+├── services/            # API services
+│   └── audioApi.ts     # Backend API integration
+├── hooks/              # Custom React hooks
+│   └── useAudioApi.ts  # Audio API management hook
+├── config/             # Configuration files
+│   └── api.ts          # API configuration
 ├── App.tsx             # Main application component
 ├── main.tsx            # Application entry point
 ├── index.css           # Global styles
@@ -68,13 +86,25 @@ public/
 - **Tailwind CSS** - Utility-first CSS framework
 - **CSS Modules** - Component-scoped styling
 
-## Demo Features
+## Backend Integration
 
-Since this is a frontend-only application, the "AI generation" features are simulated:
+This application integrates with a Python backend API for real audio generation:
 
-- **AI Lyrics**: Provides sample lyrics from a predefined set
-- **Music Generation**: Uses demo tracks to simulate AI-generated music
-- **Track Management**: Full playlist functionality with add/remove capabilities
+### API Endpoints
+- `POST /generate-audio` - Generate audio from music details and lyrics
+- `GET /audio-files` - List all generated audio files
+- `GET /audio-details/{file_id}` - Get detailed file information
+- `GET /download-audio/{file_id}` - Download/stream audio files
+- `DELETE /delete-audio/{file_id}` - Delete audio files
+- `GET /audio-stats` - Get audio library statistics
+
+### Features
+- **Real AI Generation**: Connects to backend AI models for music generation
+- **File Management**: Upload, download, and delete audio files
+- **Error Handling**: Graceful handling of API errors and network issues
+- **Offline Fallback**: Demo tracks available when backend is unavailable
+
+For detailed API integration information, see [API_INTEGRATION.md](./API_INTEGRATION.md).
 
 ## Contributing
 

@@ -4,6 +4,9 @@ export interface Track {
   artist: string;
   audioSrc: string;
   imageUrl: string;
+  fileId?: string; // Backend file ID for API-generated tracks
+  duration?: number;
+  createdAt?: string;
 }
 
 export interface LyricsGenerationRequest {
@@ -14,4 +17,11 @@ export interface LyricsGenerationRequest {
 export interface MusicGenerationRequest {
   musicDetail: string;
   lyrics: string;
+}
+
+export interface GenerationStatus {
+  isGenerating: boolean;
+  progress?: number;
+  message?: string;
+  error?: string;
 }

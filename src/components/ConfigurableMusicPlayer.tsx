@@ -22,6 +22,7 @@ export interface ConfigurableMusicPlayerProps {
   onPlaylistChange?: (playlist: Track[]) => void;
   onCurrentTrackChange?: (track: Track | null, index: number | null) => void;
   onPlayStateChange?: (isPlaying: boolean) => void;
+  onTrackGenerated?: (track: Track) => void;
   
   // Optional Overrides
   className?: string;
@@ -37,7 +38,7 @@ interface MusicPlayerState {
 }
 
 // Default values for props
-const DEFAULT_PROPS: Required<Omit<ConfigurableMusicPlayerProps, 'onPlaylistChange' | 'onCurrentTrackChange' | 'onPlayStateChange' | 'className' | 'style'>> = {
+const DEFAULT_PROPS: Required<Omit<ConfigurableMusicPlayerProps, 'onPlaylistChange' | 'onCurrentTrackChange' | 'onPlayStateChange' | 'onTrackGenerated' | 'className' | 'style'>> = {
   maxPlaylistSize: 5,
   initialTracks: [],
   enableGenerator: true,
@@ -110,6 +111,7 @@ export const ConfigurableMusicPlayer: React.FC<ConfigurableMusicPlayerProps> = (
     onPlaylistChange,
     onCurrentTrackChange,
     onPlayStateChange,
+    onTrackGenerated,
     className,
     style
   } = props;
@@ -203,7 +205,8 @@ export const ConfigurableMusicPlayer: React.FC<ConfigurableMusicPlayerProps> = (
     safeCallback(onPlaylistChange, newPlaylist);
     safeCallback(onCurrentTrackChange, newTrack, newIndex);
     safeCallback(onPlayStateChange, true);
-  }, [isPlaylistFull, state.playlist, onPlaylistChange, onCurrentTrackChange, onPlayStateChange, safeCallback]);
+    safeCallback(onTrackGenerated, newTrack);
+  }, [isPlaylistFull, state.playlist, onPlaylistChange, onCurrentTrackChange, onPlayStateChange, onTrackGenerated, safeCallback]);
 
   const handleRemoveTrack = useCallback((indexToRemove: number) => {
     if (indexToRemove < 0 || indexToRemove >= state.playlist.length) return;

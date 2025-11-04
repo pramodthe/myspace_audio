@@ -45,15 +45,30 @@ export const MusicPlayerUI: React.FC<MusicPlayerUIProps> = ({
         if (!audio) return;
         
         if (currentTrack?.audioSrc) {
+            console.log('🎵 Loading audio:', currentTrack.audioSrc);
             if (audio.src !== currentTrack.audioSrc) {
                 audio.src = currentTrack.audioSrc;
+                console.log('🎵 Audio src set to:', audio.src);
             }
             if (isPlaying) {
                 if (audio.ended) audio.currentTime = 0;
-                const playAudio = () => audio.play().catch(e => console.error("Playback failed:", e));
-                if (audio.readyState > 2) playAudio();
-                else {
+                const playAudio = () => {
+                    console.log('🎵 Attempting to play audio...');
+                    audio.play()
+                        .then(() => console.log('🎵 Audio playing successfully'))
+                        .catch(e => {
+                            console.error("🎵 Playback failed:", e);
+                            console.error("🎵 Audio readyState:", audio.readyState);
+                            console.error("🎵 Audio networkState:", audio.networkState);
+                        });
+                };
+                if (audio.readyState > 2) {
+                    console.log('🎵 Audio ready, playing immediately');
+                    playAudio();
+                } else {
+                    console.log('🎵 Audio not ready, waiting for canplay event');
                     const canPlayListener = () => {
+                        console.log('🎵 Audio canplay event fired');
                         playAudio();
                         audio.removeEventListener('canplay', canPlayListener);
                     };
@@ -61,9 +76,11 @@ export const MusicPlayerUI: React.FC<MusicPlayerUIProps> = ({
                     return () => audio.removeEventListener('canplay', canPlayListener);
                 }
             } else {
+                console.log('🎵 Pausing audio');
                 audio.pause();
             }
         } else {
+            console.log('🎵 No audio source, clearing');
             audio.pause();
             audio.src = '';
         }
