@@ -1,5 +1,0 @@
-{
-  "name": "AI Music Generator",
-  "description": "Create unique music tracks using AI. Provide musical details and lyrics, and let Gemini generate a song for you to play in the built-in music player.",
-  "requestFramePermissions": []
-}

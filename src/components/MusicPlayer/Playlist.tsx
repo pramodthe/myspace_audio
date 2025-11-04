@@ -1,5 +1,5 @@
 import React from 'react';
-import { Track } from '../../types/music';
+import { Track } from './types';
 
 interface PlaylistProps {
     playlist: Track[];

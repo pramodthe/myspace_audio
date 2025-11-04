@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { Track } from '../../types/music';
-import { ThemeName } from '../../types/theme';
+import { Track } from './types';
+import { ThemeName } from './themes';
 import { useThemeStyles } from './ThemeProvider';
 import './MusicPlayerUI.css';
 

@@ -1,43 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Track } from '../../types/music';
-import { generateLyrics } from '../../services/geminiApi';
-import { generateMusicWithReplicate as generateMusic } from '../../services/replicateApi';
-import { pcmToWavBlob } from '../../utils/audioUtils';
+import { Track } from './types';
 
-// Helper function to process audio data from different sources
-async function processAudioData(base64Audio: string): Promise<string> {
-    try {
-        console.log("🔄 Processing audio data, base64 length:", base64Audio.length);
-        const bytes = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
-        console.log("📊 Audio bytes length:", bytes.length);
-        console.log("🔍 First few bytes:", Array.from(bytes.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-        
-        // Check if it's MP3 data (starts with ID3 tag or MP3 frame sync)
-        const isMP3 = (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) || // ID3 tag
-                      (bytes[0] === 0xFF && (bytes[1] & 0xE0) === 0xE0); // MP3 frame sync
-        
-        console.log("🎵 Detected format:", isMP3 ? "MP3" : "PCM/WAV");
-        
-        if (isMP3) {
-            // For MP3 data, create blob directly
-            const blob = new Blob([bytes], { type: 'audio/mpeg' });
-            const url = URL.createObjectURL(blob);
-            console.log("✅ Created MP3 blob URL:", url);
-            return url;
-        } else {
-            // For PCM data, convert to WAV
-            console.log("🔄 Converting PCM to WAV...");
-            const pcmData = new Int16Array(bytes.buffer);
-            const wavBlob = pcmToWavBlob(pcmData, 24000, 1);
-            const url = URL.createObjectURL(wavBlob);
-            console.log("✅ Created WAV blob URL:", url);
-            return url;
-        }
-    } catch (error) {
-        console.error('💥 Error processing audio data:', error);
-        throw new Error(`Failed to process audio data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+// Sample demo tracks for frontend-only demo
+const DEMO_TRACKS = [
+    {
+        title: "Midnight City Lights",
+        artist: "AI Bard",
+        audioSrc: "https://www.w3schools.com/html/horse.mp3",
+        imageUrl: "https://picsum.photos/seed/midnight/500/500"
+    },
+    {
+        title: "Summer Breeze",
+        artist: "AI Bard", 
+        audioSrc: "https://www.w3schools.com/html/horse.mp3",
+        imageUrl: "https://picsum.photos/seed/summer/500/500"
+    },
+    {
+        title: "Electric Dreams",
+        artist: "AI Bard",
+        audioSrc: "https://www.w3schools.com/html/horse.mp3", 
+        imageUrl: "https://picsum.photos/seed/electric/500/500"
     }
-}
+];
+
+// Sample lyrics for demo
+const SAMPLE_LYRICS = [
+    "Walking through the city lights tonight\nNeon signs are burning bright\nEvery step feels so alive\nIn this moment we will thrive",
+    "Summer breeze is calling me\nTo a place where I can be free\nUnderneath the starlit sky\nTime just seems to pass us by",
+    "Electric dreams are all around\nIn this digital playground\nPixels dancing in the air\nMagic moments everywhere"
+];
 
 interface GeneratorModalProps {
     isOpen: boolean;
@@ -76,15 +67,12 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
         setIsGeneratingLyrics(true); 
         setError(null);
         
-        try {
-            const generatedLyrics = await generateLyrics(description, songName);
-            setLyrics(generatedLyrics);
-        } catch (e) { 
-            console.error('Lyric generation failed:', e); 
-            setError('Failed to generate lyrics. Please try again.'); 
-        } finally { 
-            setIsGeneratingLyrics(false); 
-        }
+        // Simulate API call delay for demo
+        setTimeout(() => {
+            const randomLyrics = SAMPLE_LYRICS[Math.floor(Math.random() * SAMPLE_LYRICS.length)];
+            setLyrics(randomLyrics);
+            setIsGeneratingLyrics(false);
+        }, 1500);
     };
 
     const handleGenerate: React.FormEventHandler = async (e) => {
@@ -103,39 +91,24 @@ export const GeneratorModal: React.FC<GeneratorModalProps> = ({
         setIsLoading(true); 
         setError(null);
         
-        try {
-            console.log("🚀 Starting music generation process...");
-            const base64Audio = await generateMusic(description, lyrics);
-            console.log("✅ Received base64 audio from generateMusic");
-            
-            const audioUrl = await processAudioData(base64Audio);
-            console.log("✅ Processed audio data, URL:", audioUrl);
+        // Simulate music generation with demo track
+        setTimeout(() => {
+            const randomTrack = DEMO_TRACKS[Math.floor(Math.random() * DEMO_TRACKS.length)];
             
             const newTrack: Track = { 
                 id: `track-${Date.now()}`, 
                 title: songName, 
                 artist: 'AI Bard', 
-                audioSrc: audioUrl, 
+                audioSrc: randomTrack.audioSrc, 
                 imageUrl: `https://picsum.photos/seed/${Date.now()}/500/500` 
             };
             
-            console.log("✅ Created new track:", newTrack);
             onTrackGenerated(newTrack);
             setSongName(''); 
             setDescription(''); 
             setLyrics('');
-            console.log("🎉 Music generation completed successfully!");
-        } catch (e) { 
-            console.error('💥 Generation failed at step:', e); 
-            console.error('💥 Error details:', {
-                message: e instanceof Error ? e.message : 'Unknown error',
-                stack: e instanceof Error ? e.stack : undefined,
-                error: e
-            });
-            setError(`Failed to generate music: ${e instanceof Error ? e.message : 'Unknown error'}`); 
-        } finally { 
-            setIsLoading(false); 
-        }
+            setIsLoading(false);
+        }, 2000);
     };
 
     if (!isOpen) return null;

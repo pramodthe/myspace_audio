@@ -1,0 +1,31 @@
+/* Global styles for AI Music Generator */
+
+/* Custom scrollbar for a classic look */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #DFDFDF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C0C0C0;
+  border: 1px solid #A0A0A0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A0A0A0;
+}
+
+/* Base styles */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}

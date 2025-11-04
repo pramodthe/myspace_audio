@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Track } from '../types/music';
-import { ThemeName } from '../types/theme';
+import { Track } from './MusicPlayer/types';
+import { ThemeName } from './MusicPlayer/themes';
 import { MusicPlayerUI } from './MusicPlayer/MusicPlayerUI';
 import { Playlist } from './MusicPlayer/Playlist';
 import { GeneratorModal } from './MusicPlayer/GeneratorModal';

@@ -1,5 +1,17 @@
 import React from 'react';
 import { ConfigurableMusicPlayer } from './components/ConfigurableMusicPlayer';
+import { Track } from './components/MusicPlayer/types';
+
+// Demo tracks with working audio
+const demoTracks: Track[] = [
+    {
+        id: 'demo-1',
+        title: 'Demo Song',
+        artist: 'AI MusicBox',
+        audioSrc: 'https://www.w3schools.com/html/horse.mp3',
+        imageUrl: 'https://picsum.photos/seed/demo/300/300'
+    }
+];
 
 const App: React.FC = () => {
 
@@ -13,12 +25,13 @@ const App: React.FC = () => {
                 </header>
 
                 <main className="p-6 flex flex-col items-center justify-center">
-                   {/* Using the new configurable component with default settings */}
+                   {/* Using the new configurable component with demo tracks */}
                    <ConfigurableMusicPlayer
                        maxPlaylistSize={5}
                        enableGenerator={true}
                        theme="retro"
                        size="full"
+                       initialTracks={demoTracks}
                    />
                 </main>
             </div>
